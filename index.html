@@ -601,13 +601,10 @@ function navigate(page) {
 }
 
 function render() {
-  const titles = { home:'MyCultureRadar', movie:'Movie', music:'Music', book:'Book', art:'Art', journal:'Journal', bookmark:'Bookmark' };
-  // logo is static SVG
   const c = document.getElementById('mainContent');
-
   if (currentPage === 'journal') { renderJournal(c); return; }
   if (currentPage === 'bookmark') { renderBookmark(c); return; }
-
+  if (currentPage === 'settings') { renderSettings(c); return; }
   const cats = currentPage === 'home' ? ['movie','music','book','art'] : [currentPage];
   c.innerHTML = cats.map(cat => renderSection(cat)).join('');
 }
@@ -685,35 +682,35 @@ function renderJournal(c) {
 function renderSettings(c) {
   const apiKey = localStorage.getItem('mcr_gemini_key') || '';
   const lastFetch = localStorage.getItem('mcr_last_fetch') || 'なし';
-  c.innerHTML = `
-    <div class="section" style="max-width:540px;">
-      <div class="section-header" style="margin-bottom:24px;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>
-        <h2>SETTINGS</h2>
-      </div>
-      <div style="background:var(--card-bg);border:0.5px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-bottom:16px;">
-        <div style="font-size:13px;font-weight:500;color:var(--navy);margin-bottom:4px;">Gemini API キー</div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">Google AI Studio で取得したAPIキーを入力してください。ブラウザ内にのみ保存されます。</div>
-        <div style="display:flex;gap:8px;">
-          <input type="password" id="apiKeyInput" value="${apiKey}" placeholder="AIza..." style="flex:1;padding:9px 12px;border:0.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;background:var(--bg);outline:none;color:var(--navy);">
-          <button class="btn btn-primary" onclick="saveApiKey()">保存</button>
-        </div>
-        ${apiKey ? '<div style="font-size:11px;color:var(--text-muted);margin-top:8px;">✓ APIキー設定済み</div>' : ''}
-      </div>
-      <div style="background:var(--card-bg);border:0.5px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-bottom:16px;">
-        <div style="font-size:13px;font-weight:500;color:var(--navy);margin-bottom:4px;">新着情報の取得</div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">最終取得：${lastFetch}</div>
-        <button class="btn btn-ghost" onclick="fetchNewContent(true)" style="font-size:13px;">今すぐ更新する</button>
-      </div>
-      <div style="background:var(--card-bg);border:0.5px solid var(--border);border-radius:var(--radius);padding:20px 22px;">
-        <div style="font-size:13px;font-weight:500;color:var(--navy);margin-bottom:4px;">レコメンド</div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">ジャーナルの記録をもとにGeminiがおすすめを提案します。</div>
-        <button class="btn btn-primary" onclick="fetchRecommend()">レコメンドを取得</button>
-        <div id="recommendResult" style="margin-top:14px;font-size:13px;color:var(--text);line-height:1.7;"></div>
-      </div>
-    </div>`;
+  const keySet = apiKey ? '<div style="font-size:11px;color:#1A7A4A;margin-top:8px;">✓ APIキー設定済み</div>' : '';
+  const settingsHtml = '<div class="section" style="max-width:540px;">'
+    + '<div class="section-header" style="margin-bottom:24px;">'
+    + '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>'
+    + '<h2>SETTINGS</h2>'
+    + '</div>'
+    + '<div style="background:var(--card-bg);border:0.5px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-bottom:16px;">'
+    + '<div style="font-size:13px;font-weight:500;color:var(--navy);margin-bottom:4px;">Gemini API キー</div>'
+    + '<div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">Google AI Studio で取得したAPIキーを入力してください。ブラウザ内にのみ保存されます。</div>'
+    + '<div style="display:flex;gap:8px;">'
+    + '<input type="password" id="apiKeyInput" value="' + apiKey + '" placeholder="AIza..." style="flex:1;padding:9px 12px;border:0.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);outline:none;color:var(--navy);">'
+    + '<button class="btn btn-primary" onclick="saveApiKey()">保存</button>'
+    + '</div>'
+    + keySet
+    + '</div>'
+    + '<div style="background:var(--card-bg);border:0.5px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-bottom:16px;">'
+    + '<div style="font-size:13px;font-weight:500;color:var(--navy);margin-bottom:4px;">新着情報の取得</div>'
+    + '<div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">最終取得：' + lastFetch + '</div>'
+    + '<button class="btn btn-ghost" onclick="fetchNewContent(true)" style="font-size:13px;">今すぐ更新する</button>'
+    + '</div>'
+    + '<div style="background:var(--card-bg);border:0.5px solid var(--border);border-radius:var(--radius);padding:20px 22px;">'
+    + '<div style="font-size:13px;font-weight:500;color:var(--navy);margin-bottom:4px;">レコメンド</div>'
+    + '<div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">ジャーナルの記録をもとにGeminiがおすすめを提案します。</div>'
+    + '<button class="btn btn-primary" onclick="fetchRecommend()">レコメンドを取得</button>'
+    + '<div id="recommendResult" style="margin-top:14px;font-size:13px;color:var(--text);line-height:1.7;white-space:pre-wrap;"></div>'
+    + '</div>'
+    + '</div>';
+  c.innerHTML = settingsHtml;
 }
-
 function saveApiKey() {
   const key = document.getElementById('apiKeyInput').value.trim();
   localStorage.setItem('mcr_gemini_key', key);
@@ -855,16 +852,7 @@ if (cachedData) {
   } catch(e) {}
 }
 
-render();
 
-// Auto-fetch on Fridays or if data is stale (>6 days)
-const _now = new Date();
-const _lastFetch = localStorage.getItem('mcr_last_fetch_ts');
-const _daysSince = _lastFetch ? (_now - new Date(_lastFetch)) / (1000*60*60*24) : 999;
-const _isFriday = _now.getDay() === 5;
-if (localStorage.getItem('mcr_gemini_key') && (_isFriday || _daysSince > 6)) {
-  setTimeout(() => fetchNewContent(), 1000);
-}
 function previewImages(input) {
   const files = Array.from(input.files).slice(0, 5);
   window._pendingImages = [];
@@ -993,31 +981,41 @@ async function fetchNewContent(force = false) {
 
 async function fetchRecommend() {
   if (journalData.length === 0) {
-    document.getElementById('recommendResult').textContent = 'ジャーナルに記録を追加してからお試しください。';
+    const el = document.getElementById('recommendResult');
+    if (el) el.textContent = 'ジャーナルに記録を追加してからお試しください。';
     return;
   }
   const resultEl = document.getElementById('recommendResult');
+  if (!resultEl) return;
   resultEl.textContent = '取得中...';
 
   const journalSummary = journalData.slice(-10).map(j =>
-    `・${j.title}（${j.categoryLabel || ''}）${j.note ? '：' + j.note : ''}`
-  ).join('
-');
+    '・' + j.title + '（' + (j.categoryLabel || '') + '）' + (j.note ? '：' + j.note : '')
+  ).join('\n');
 
-  const prompt = `以下は私が最近体験したコンテンツの記録です：
-${journalSummary}
-
-この記録をもとに、私が次に楽しめそうな映画・音楽・本・展示をそれぞれ1〜2件、理由とともに日本語で提案してください。200文字以内で簡潔にお願いします。`;
+  const prompt = '以下は私が最近体験したコンテンツの記録です：\n'
+    + journalSummary
+    + '\n\nこの記録をもとに、私が次に楽しめそうな映画・音楽・本・展示をそれぞれ1〜2件、理由とともに日本語で提案してください。200文字以内で簡潔にお願いします。';
 
   const result = await callGemini(prompt);
   if (result) resultEl.textContent = result;
 }
-
 function toggleSidebar() {
   const sidebar = document.getElementById('sidebar');
   const main = document.querySelector('.main');
   const isOpen = sidebar.classList.toggle('open');
   main.style.marginLeft = isOpen ? 'var(--sidebar-w)' : '52px';
+}
+
+render();
+
+// Auto-fetch on Fridays or if data is stale (>6 days)
+const _now = new Date();
+const _lastFetch = localStorage.getItem('mcr_last_fetch_ts');
+const _daysSince = _lastFetch ? (_now - new Date(_lastFetch)) / (1000*60*60*24) : 999;
+const _isFriday = _now.getDay() === 5;
+if (localStorage.getItem('mcr_gemini_key') && (_isFriday || _daysSince > 6)) {
+  setTimeout(() => fetchNewContent(), 1000);
 }
 </script>
 </body>
