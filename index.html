@@ -394,7 +394,7 @@
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z"/></svg>
       <span class="nav-text">BOOKMARK</span>
     </div>
-    <div class="nav-item">
+    <div class="nav-item" onclick="navigate('settings')" data-page="settings">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>
       <span class="nav-text">SETTINGS</span>
     </div>
@@ -682,6 +682,44 @@ function renderJournal(c) {
   c.innerHTML = html;
 }
 
+function renderSettings(c) {
+  const apiKey = localStorage.getItem('mcr_gemini_key') || '';
+  const lastFetch = localStorage.getItem('mcr_last_fetch') || 'なし';
+  c.innerHTML = `
+    <div class="section" style="max-width:540px;">
+      <div class="section-header" style="margin-bottom:24px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>
+        <h2>SETTINGS</h2>
+      </div>
+      <div style="background:var(--card-bg);border:0.5px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:500;color:var(--navy);margin-bottom:4px;">Gemini API キー</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">Google AI Studio で取得したAPIキーを入力してください。ブラウザ内にのみ保存されます。</div>
+        <div style="display:flex;gap:8px;">
+          <input type="password" id="apiKeyInput" value="${apiKey}" placeholder="AIza..." style="flex:1;padding:9px 12px;border:0.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;background:var(--bg);outline:none;color:var(--navy);">
+          <button class="btn btn-primary" onclick="saveApiKey()">保存</button>
+        </div>
+        ${apiKey ? '<div style="font-size:11px;color:var(--text-muted);margin-top:8px;">✓ APIキー設定済み</div>' : ''}
+      </div>
+      <div style="background:var(--card-bg);border:0.5px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:500;color:var(--navy);margin-bottom:4px;">新着情報の取得</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">最終取得：${lastFetch}</div>
+        <button class="btn btn-ghost" onclick="fetchNewContent(true)" style="font-size:13px;">今すぐ更新する</button>
+      </div>
+      <div style="background:var(--card-bg);border:0.5px solid var(--border);border-radius:var(--radius);padding:20px 22px;">
+        <div style="font-size:13px;font-weight:500;color:var(--navy);margin-bottom:4px;">レコメンド</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">ジャーナルの記録をもとにGeminiがおすすめを提案します。</div>
+        <button class="btn btn-primary" onclick="fetchRecommend()">レコメンドを取得</button>
+        <div id="recommendResult" style="margin-top:14px;font-size:13px;color:var(--text);line-height:1.7;"></div>
+      </div>
+    </div>`;
+}
+
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  localStorage.setItem('mcr_gemini_key', key);
+  render();
+}
+
 function renderBookmark(c) {
   const bookmarked = [];
   Object.keys(SAMPLE_DATA).forEach(cat => {
@@ -806,7 +844,27 @@ function sortCards() {
 
 function handleSearch(v) { searchQuery = v; render(); }
 
+// Load cached Gemini data if available
+const cachedData = localStorage.getItem('mcr_cached_data');
+if (cachedData) {
+  try {
+    const parsed = JSON.parse(cachedData);
+    ['movie','music','book','art'].forEach(cat => {
+      if (parsed[cat]) SAMPLE_DATA[cat] = parsed[cat];
+    });
+  } catch(e) {}
+}
+
 render();
+
+// Auto-fetch on Fridays or if data is stale (>6 days)
+const _now = new Date();
+const _lastFetch = localStorage.getItem('mcr_last_fetch_ts');
+const _daysSince = _lastFetch ? (_now - new Date(_lastFetch)) / (1000*60*60*24) : 999;
+const _isFriday = _now.getDay() === 5;
+if (localStorage.getItem('mcr_gemini_key') && (_isFriday || _daysSince > 6)) {
+  setTimeout(() => fetchNewContent(), 1000);
+}
 function previewImages(input) {
   const files = Array.from(input.files).slice(0, 5);
   window._pendingImages = [];
@@ -865,6 +923,94 @@ function openJournalDetail(idx) {
     dots.innerHTML = '';
   }
   openModal('journalDetailModal');
+}
+
+async function callGemini(prompt) {
+  const key = localStorage.getItem('mcr_gemini_key');
+  if (!key) { alert('設定画面でGemini APIキーを入力してください。'); return null; }
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+    const data = await res.json();
+    if (data.error) { alert('APIエラー: ' + data.error.message); return null; }
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+  } catch(e) {
+    alert('通信エラーが発生しました。');
+    return null;
+  }
+}
+
+async function fetchNewContent(force = false) {
+  const key = localStorage.getItem('mcr_gemini_key');
+  if (!key) { navigate('settings'); alert('まずAPIキーを設定してください。'); return; }
+
+  const now = new Date();
+  const lastFetch = localStorage.getItem('mcr_last_fetch_ts');
+  const daysSince = lastFetch ? (now - new Date(lastFetch)) / (1000*60*60*24) : 999;
+  if (!force && daysSince < 6) return;
+
+  const loadingEl = document.getElementById('mainContent');
+  if (loadingEl) loadingEl.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);font-size:13px;">Geminiから最新情報を取得中...</div>';
+
+  const today = now.toLocaleDateString('ja-JP', {year:'numeric', month:'long', day:'numeric'});
+  const prompt = `あなたは日本の文化情報アシスタントです。今日は${today}です。
+以下のカテゴリごとに、最近リリース・公開・開催されている注目のコンテンツを各4件、JSON形式で返してください。
+必ずJSON配列のみを返し、説明文や\`\`\`は不要です。
+
+{
+  "movie": [{"id":"m_1","title":"タイトル","desc":"100文字以内の説明"}],
+  "music": [{"id":"mu_1","title":"タイトル","desc":"100文字以内の説明"}],
+  "book": [{"id":"b_1","title":"タイトル","desc":"100文字以内の説明"}],
+  "art": [{"id":"a_1","title":"タイトル（展示名）","desc":"100文字以内の説明（会場名を含む）"}]
+}`;
+
+  const result = await callGemini(prompt);
+  if (!result) { render(); return; }
+
+  try {
+    const clean = result.replace(/```json|```/g, '').trim();
+    const data = JSON.parse(clean);
+    ['movie','music','book','art'].forEach(cat => {
+      if (data[cat] && data[cat].length) {
+        data[cat].forEach((item, i) => {
+          item.id = item.id || `${cat}_${i}`;
+          item.status = 'none';
+        });
+        SAMPLE_DATA[cat] = data[cat];
+      }
+    });
+    localStorage.setItem('mcr_last_fetch_ts', now.toISOString());
+    localStorage.setItem('mcr_last_fetch', now.toLocaleDateString('ja-JP', {month:'long', day:'numeric', hour:'2-digit', minute:'2-digit'}));
+    localStorage.setItem('mcr_cached_data', JSON.stringify(SAMPLE_DATA));
+  } catch(e) {
+    console.error('Parse error:', e, result);
+  }
+  render();
+}
+
+async function fetchRecommend() {
+  if (journalData.length === 0) {
+    document.getElementById('recommendResult').textContent = 'ジャーナルに記録を追加してからお試しください。';
+    return;
+  }
+  const resultEl = document.getElementById('recommendResult');
+  resultEl.textContent = '取得中...';
+
+  const journalSummary = journalData.slice(-10).map(j =>
+    `・${j.title}（${j.categoryLabel || ''}）${j.note ? '：' + j.note : ''}`
+  ).join('
+');
+
+  const prompt = `以下は私が最近体験したコンテンツの記録です：
+${journalSummary}
+
+この記録をもとに、私が次に楽しめそうな映画・音楽・本・展示をそれぞれ1〜2件、理由とともに日本語で提案してください。200文字以内で簡潔にお願いします。`;
+
+  const result = await callGemini(prompt);
+  if (result) resultEl.textContent = result;
 }
 
 function toggleSidebar() {
