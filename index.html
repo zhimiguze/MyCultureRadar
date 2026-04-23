@@ -400,13 +400,7 @@
     .topbar-title svg { height: 20px; }
     .filter-menu { right: 0; top: 44px; }
 
-    /* Bottom tab bar */
-    .tab-bar {
-      display: flex;
-    }
-  }
-  @media (min-width: 769px) {
-    .tab-bar { display: none; }
+    /* Bottom tab bar - handled below */
   }
   .tab-bar {
     position: fixed;
@@ -420,6 +414,9 @@
     justify-content: space-around;
     padding: 0 8px;
     padding-bottom: env(safe-area-inset-bottom);
+  }
+  @media (max-width: 768px) {
+    .tab-bar { display: flex; }
   }
   .tab-item {
     display: flex; flex-direction: column; align-items: center; gap: 3px;
