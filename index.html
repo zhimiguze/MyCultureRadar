@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MyCultureRadar</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0E0B32;
+    --navy80: rgba(14,11,50,0.8);
+    --navy20: rgba(14,11,50,0.12);
+    --navy10: rgba(14,11,50,0.06);
+    --accent: #0E0B32;
+    --bg: #F5F4F0;
+    --card-bg: #FFFFFF;
+    --text: #0E0B32;
+    --text-muted: rgba(14,11,50,0.45);
+    --text-light: rgba(14,11,50,0.28);
+    --border: rgba(14,11,50,0.1);
+    --sidebar-w: 180px;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 52px;
+    min-height: 100vh;
+    background: var(--card-bg);
+    border-right: 0.5px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 100;
+    overflow: hidden;
+    transition: width 0.25s ease;
+  }
+  .sidebar.open { width: var(--sidebar-w); }
+
+  .sidebar-top {
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding-left: 8px;
+    border-bottom: 0.5px solid var(--border);
+    flex-shrink: 0;
+  }
+  #hamburger {
+    background: none; border: none; cursor: pointer;
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 8px; padding: 0;
+    color: var(--navy);
+    transition: background 0.15s;
+  }
+  #hamburger:hover { background: var(--navy10); }
+  .sidebar-nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+  .nav-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 14px;
+    font-size: 13px; font-weight: 400;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+    border-left: 2px solid transparent;
+    user-select: none;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .sidebar:not(.open) .nav-item { padding: 8px; justify-content: center; gap: 0; }
+  .sidebar:not(.open) .nav-sub { display: none; }
+  .sidebar:not(.open) .sidebar-footer { align-items: center; }
+  .nav-text { opacity: 1; transition: opacity 0.15s; }
+  .sidebar:not(.open) .nav-text { display: none; }
+  .nav-item:hover { color: var(--navy); background: var(--navy10); }
+  .nav-item.active { color: var(--navy); font-weight: 500; border-left-color: var(--navy); background: var(--navy10); }
+  .nav-item svg { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.7; }
+  .nav-item.active svg { opacity: 1; }
+  .nav-sub { padding-left: 16px; border-left: 0.5px solid var(--border); margin: 2px 18px 4px 30px; }
+  .nav-sub .nav-item { padding: 5px 8px; font-size: 12px; border-left: none; }
+  .nav-sub .nav-item.active { font-weight: 500; color: var(--navy); }
+  .sidebar-footer {
+    padding: 12px 18px 20px;
+    border-top: 0.5px solid var(--border);
+    display: flex; flex-direction: column; gap: 2px;
+  }
+
+  /* Main */
+  .main {
+    margin-left: 52px;
+    transition: margin-left 0.25s ease;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    background: var(--bg);
+    border-bottom: 0.5px solid var(--border);
+    padding: 14px 28px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px;
+  }
+  #topbarTitle { display: flex; align-items: center; }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .search-wrap {
+    display: flex; align-items: center;
+    background: var(--card-bg);
+    border: 0.5px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 14px;
+    gap: 7px;
+    min-width: 200px;
+  }
+  .search-wrap input {
+    border: none; background: none; outline: none;
+    font-size: 13px; color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    width: 100%;
+  }
+  .search-wrap input::placeholder { color: var(--text-light); }
+  .search-wrap svg { width: 14px; height: 14px; opacity: 0.4; flex-shrink: 0; }
+  .icon-btn {
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    border: 0.5px solid var(--border);
+    background: var(--card-bg);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .icon-btn:hover { background: var(--navy10); }
+  .icon-btn svg { width: 15px; height: 15px; opacity: 0.55; }
+
+  /* Content */
+  .content { padding: 28px 28px 60px; }
+  .section { margin-bottom: 36px; }
+  .section-header {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 16px;
+  }
+  .section-arrow {
+    margin-left: auto;
+    background: transparent;
+    border: 1.5px solid var(--navy);
+    cursor: pointer;
+    width: 28px; height: 28px; border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.15s;
+    align-self: center;
+  }
+  .section-arrow:hover { opacity: 0.6; }
+  .section-arrow svg { width: 13px; height: 13px; stroke: var(--navy); }
+  .section-header svg { width: 16px; height: 16px; color: var(--navy); }
+  .section-header h2 { font-size: 13px; font-weight: 500; letter-spacing: 0.06em; color: var(--navy); }
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 14px;
+  }
+  .card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border);
+    overflow: hidden;
+    transition: transform 0.15s, box-shadow 0.15s;
+    display: flex; flex-direction: column;
+  }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(14,11,50,0.08); }
+  .card-thumb {
+    width: 100%; aspect-ratio: 4/3;
+    background:
+      repeating-linear-gradient(45deg, rgba(14,11,50,0.05) 0px, rgba(14,11,50,0.05) 1px, transparent 1px, transparent 10px),
+      #EBEBEB;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px;
+    color: var(--text-light);
+    position: relative;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .card-thumb img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+  .card-body { padding: 12px 14px 14px; display: flex; flex-direction: column; flex: 1; position: relative; }
+  .card-title { font-size: 15px; font-weight: 500; color: var(--navy); margin-bottom: 6px; line-height: 1.35; }
+  .card-desc { font-size: 11px; color: var(--text-muted); line-height: 1.6; margin-bottom: 10px; flex: 1; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+  .card-footer { display: flex; align-items: center; justify-content: flex-end; padding-top: 8px; }
+  .card-bm {
+    background: none; border: none; cursor: pointer; padding: 2px;
+    color: var(--text-light); display: flex; align-items: center; transition: color 0.15s;
+  }
+  .card-bm svg { width: 15px; height: 15px; }
+  .card-bm:hover { color: var(--navy); }
+  .card-bm.active { color: var(--navy); }
+  .card-arrow {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    background: transparent;
+    border: 1.5px solid var(--navy);
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.15s;
+    cursor: pointer;
+    margin-left: auto;
+  }
+  .card:hover .card-arrow { opacity: 0.6; }
+  .card-arrow svg { width: 13px; height: 13px; stroke: var(--navy); }
+
+  .card-arrow {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: var(--navy10);
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .card:hover .card-arrow { background: var(--navy); }
+  .card:hover .card-arrow svg { stroke: white; }
+  .card-arrow svg { width: 11px; height: 11px; stroke: var(--navy); transition: stroke 0.15s; }
+
+  /* Journal view */
+  .journal-list { display: flex; flex-direction: column; gap: 10px; }
+  .journal-item {
+    background: var(--card-bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex; gap: 14px; align-items: flex-start;
+  }
+  .journal-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: var(--navy10);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+    color: var(--navy);
+  }
+  .journal-info { flex: 1; }
+  .journal-title { font-size: 14px; font-weight: 500; color: var(--navy); margin-bottom: 3px; }
+  .journal-meta { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+  .journal-note { font-size: 12px; color: var(--text); line-height: 1.6; font-style: italic; }
+  .journal-cat { font-size: 10px; padding: 2px 7px; border-radius: 999px; border: 0.5px solid var(--border); color: var(--text-muted); background: var(--bg); white-space: nowrap; }
+  .add-journal-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 14px;
+    border: 0.5px dashed var(--border);
+    border-radius: var(--radius);
+    font-size: 13px; color: var(--text-muted);
+    cursor: pointer;
+    background: transparent;
+    transition: background 0.15s, color 0.15s;
+    width: 100%;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .add-journal-btn:hover { background: var(--card-bg); color: var(--navy); }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(14,11,50,0.35);
+    z-index: 200;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--card-bg);
+    border-radius: 14px;
+    padding: 24px;
+    width: 440px; max-width: 94vw;
+    border: 0.5px solid var(--border);
+  }
+  .detail-modal .modal { padding: 0; }
+  .modal h3 { font-size: 16px; font-weight: 500; color: var(--navy); margin-bottom: 18px; }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 11px; font-weight: 500; color: var(--text-muted); margin-bottom: 5px; letter-spacing: 0.05em; }
+  .form-group input, .form-group textarea, .form-group select {
+    width: 100%; padding: 9px 12px;
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px; color: var(--navy);
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--navy); }
+  .form-group textarea { resize: vertical; min-height: 72px; }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+  .btn {
+    padding: 8px 18px; border-radius: 8px; font-size: 13px;
+    font-family: 'DM Sans', sans-serif; cursor: pointer; font-weight: 400;
+    transition: all 0.15s;
+  }
+  .btn-ghost { background: transparent; border: 0.5px solid var(--border); color: var(--text-muted); }
+  .btn-ghost:hover { background: var(--navy10); color: var(--navy); }
+  .btn-primary { background: var(--navy); border: none; color: white; }
+  .btn-primary:hover { opacity: 0.85; }
+
+  /* Card detail modal */
+  .detail-modal .modal {
+    width: 480px;
+    padding: 0;
+    overflow: hidden;
+    border-radius: 16px;
+  }
+  .detail-thumb {
+    width: 100%; aspect-ratio: 16/9;
+    background:
+      repeating-linear-gradient(45deg, rgba(14,11,50,0.05) 0px, rgba(14,11,50,0.05) 1px, transparent 1px, transparent 10px),
+      #EBEBEB;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 48px; color: var(--text-light);
+    position: relative;
+  }
+
+  .detail-body { padding: 16px 20px 20px; }
+  .detail-title { font-size: 18px; font-weight: 500; color: var(--navy); margin-bottom: 6px; }
+  .detail-sub { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 0; }
+  .status-row { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .status-opt {
+    padding: 6px 14px; border-radius: 999px; font-size: 12px;
+    border: 0.5px solid var(--border); cursor: pointer;
+    transition: all 0.15s; color: var(--text-muted); background: var(--bg);
+  }
+  .status-opt:hover { border-color: var(--navy); color: var(--navy); }
+  .status-opt.active { background: var(--navy); color: white; border-color: var(--navy); }
+
+  /* Filter dropdown */
+  .filter-menu {
+    display: none; position: absolute; top: 48px; right: 0;
+    background: var(--card-bg); border: 0.5px solid var(--border);
+    border-radius: 10px; padding: 8px;
+    min-width: 160px; z-index: 300;
+    box-shadow: 0 8px 24px rgba(14,11,50,0.1);
+  }
+  .filter-menu.open { display: block; }
+  .filter-opt {
+    padding: 7px 12px; font-size: 12px; color: var(--text-muted);
+    cursor: pointer; border-radius: 6px; transition: background 0.1s;
+  }
+  .filter-opt:hover { background: var(--navy10); color: var(--navy); }
+  .filter-opt.active { color: var(--navy); font-weight: 500; }
+
+  .filter-wrap { position: relative; }
+
+  /* Empty state */
+  .empty { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-top">
+    <button id="hamburger" onclick="toggleSidebar()" aria-label="メニュー"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h16"/></svg></button>
+  </div>
+  <nav class="sidebar-nav" id="sidebarNav">
+    <div class="nav-item active" onclick="navigate('home')" data-page="home">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <span class="nav-text">HOME</span>
+    </div>
+    <div class="nav-sub">
+      <div class="nav-item" onclick="navigate('movie')" data-page="movie">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 3v18"/><path d="M3 7.5h4"/><path d="M3 12h18"/><path d="M3 16.5h4"/><path d="M17 3v18"/><path d="M17 7.5h4"/><path d="M17 16.5h4"/></svg>
+        <span class="nav-text">MOVIE</span>
+      </div>
+      <div class="nav-item" onclick="navigate('music')" data-page="music">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg>
+        <span class="nav-text">MUSIC</span>
+      </div>
+      <div class="nav-item" onclick="navigate('book')" data-page="book">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/><path d="M8 11h8"/><path d="M8 7h6"/></svg>
+        <span class="nav-text">BOOK</span>
+      </div>
+      <div class="nav-item" onclick="navigate('art')" data-page="art">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+        <span class="nav-text">ART</span>
+      </div>
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="nav-item" onclick="navigate('journal')" data-page="journal">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4"/><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><path d="M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z"/></svg>
+      <span class="nav-text">JOURNAL</span>
+    </div>
+    <div class="nav-item" onclick="navigate('bookmark')" data-page="bookmark">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z"/></svg>
+      <span class="nav-text">BOOKMARK</span>
+    </div>
+    <div class="nav-item" onclick="navigate('settings')" data-page="settings">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>
+      <span class="nav-text">SETTINGS</span>
+    </div>
+  </div>
+</aside>
+
+<!-- Main -->
+<div class="main">
+  <header class="topbar">
+    <div id="topbarTitle"><svg height="26" style="display:block;" viewBox="0 0 254 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M243.512 30.252C242.504 30.252 242 29.748 242 28.74V13.512C242 12.504 242.504 12 243.512 12C244.52 12 245.024 12.504 245.024 13.512V14.916C245.732 13.956 246.632 13.23 247.724 12.738C248.828 12.246 250.088 12 251.504 12C252.512 12 253.016 12.504 253.016 13.512C253.016 14.52 252.512 15.024 251.504 15.024C249.428 15.024 247.844 15.408 246.752 16.176C245.66 16.944 245.084 17.958 245.024 19.218V28.74C245.024 29.748 244.52 30.252 243.512 30.252Z" fill="#0E0B32"/>
+<path d="M228.976 30.252C226.96 30.252 225.46 29.76 224.476 28.776C223.492 27.792 223 26.292 223 24.276C223 22.26 223.486 20.76 224.458 19.776C225.442 18.792 226.948 18.3 228.976 18.3H236.59C236.518 17.04 236.188 16.182 235.6 15.726C235.012 15.258 234.004 15.024 232.576 15.024H230.488C229.288 15.024 228.394 15.108 227.806 15.276C227.218 15.432 226.804 15.72 226.564 16.14C226.348 16.644 226.126 16.992 225.898 17.184C225.67 17.376 225.328 17.472 224.872 17.472C224.368 17.472 223.972 17.334 223.684 17.058C223.396 16.77 223.312 16.392 223.432 15.924C223.792 14.568 224.542 13.578 225.682 12.954C226.834 12.318 228.436 12 230.488 12H232.576C234.976 12 236.752 12.576 237.904 13.728C239.056 14.88 239.632 16.656 239.632 19.056V28.74C239.632 29.748 239.128 30.252 238.12 30.252C237.112 30.252 236.608 29.748 236.608 28.74V27.93C235.324 29.478 233.452 30.252 230.992 30.252H228.976ZM228.976 27.228H230.992C231.88 27.228 232.714 27.15 233.494 26.994C234.274 26.826 234.94 26.526 235.492 26.094C236.056 25.662 236.428 25.044 236.608 24.24V21.324H228.976C227.788 21.324 226.996 21.522 226.6 21.918C226.216 22.314 226.024 23.1 226.024 24.276C226.024 25.464 226.216 26.256 226.6 26.652C226.996 27.036 227.788 27.228 228.976 27.228Z" fill="#0E0B32"/>
+<path d="M211.056 30.344C208.668 30.344 206.892 29.768 205.728 28.616C204.576 27.452 204 25.676 204 23.288V19.148C204 16.748 204.576 14.972 205.728 13.82C206.892 12.668 208.668 12.092 211.056 12.092H218.04V6.512C218.04 5.504 218.544 5 219.552 5C220.56 5 221.064 5.504 221.064 6.512V28.832C221.064 29.84 220.56 30.344 219.552 30.344C218.544 30.344 218.04 29.84 218.04 28.832V28.58C217.476 29.156 216.738 29.594 215.826 29.894C214.914 30.194 213.78 30.344 212.424 30.344H211.056ZM211.056 27.32H212.424C214.008 27.32 215.34 27.116 216.42 26.708C217.5 26.3 218.04 25.676 218.04 24.836V15.116H211.056C209.496 15.116 208.434 15.404 207.87 15.98C207.306 16.544 207.024 17.6 207.024 19.148V23.288C207.024 24.848 207.306 25.91 207.87 26.474C208.446 27.038 209.508 27.32 211.056 27.32Z" fill="#0E0B32"/>
+<path d="M190.976 30.252C188.96 30.252 187.46 29.76 186.476 28.776C185.492 27.792 185 26.292 185 24.276C185 22.26 185.486 20.76 186.458 19.776C187.442 18.792 188.948 18.3 190.976 18.3H198.59C198.518 17.04 198.188 16.182 197.6 15.726C197.012 15.258 196.004 15.024 194.576 15.024H192.488C191.288 15.024 190.394 15.108 189.806 15.276C189.218 15.432 188.804 15.72 188.564 16.14C188.348 16.644 188.126 16.992 187.898 17.184C187.67 17.376 187.328 17.472 186.872 17.472C186.368 17.472 185.972 17.334 185.684 17.058C185.396 16.77 185.312 16.392 185.432 15.924C185.792 14.568 186.542 13.578 187.682 12.954C188.834 12.318 190.436 12 192.488 12H194.576C196.976 12 198.752 12.576 199.904 13.728C201.056 14.88 201.632 16.656 201.632 19.056V28.74C201.632 29.748 201.128 30.252 200.12 30.252C199.112 30.252 198.608 29.748 198.608 28.74V27.93C197.324 29.478 195.452 30.252 192.992 30.252H190.976ZM190.976 27.228H192.992C193.88 27.228 194.714 27.15 195.494 26.994C196.274 26.826 196.94 26.526 197.492 26.094C198.056 25.662 198.428 25.044 198.608 24.24V21.324H190.976C189.788 21.324 188.996 21.522 188.6 21.918C188.216 22.314 188.024 23.1 188.024 24.276C188.024 25.464 188.216 26.256 188.6 26.652C188.996 27.036 189.788 27.228 190.976 27.228Z" fill="#0E0B32"/>
+<path d="M181.696 29.48C181.3 29.732 180.922 29.81 180.562 29.714C180.202 29.618 179.896 29.372 179.644 28.976L174.064 19.688H169.024V27.896C169.024 28.904 168.52 29.408 167.512 29.408C166.504 29.408 166 28.904 166 27.896V6.512C166 5.504 166.504 5 167.512 5H175.936C178.132 5 179.812 5.588 180.976 6.764C182.152 7.928 182.74 9.608 182.74 11.804V12.884C182.74 14.792 182.296 16.316 181.408 17.456C180.52 18.584 179.236 19.286 177.556 19.562L182.272 27.428C182.728 28.268 182.536 28.952 181.696 29.48ZM169.024 16.664H175.936C177.304 16.664 178.276 16.376 178.852 15.8C179.428 15.224 179.716 14.252 179.716 12.884V11.804C179.716 10.448 179.428 9.482 178.852 8.906C178.276 8.318 177.304 8.024 175.936 8.024H169.024V16.664Z" fill="#0E0B32"/>
+<path d="M146.024 22.3687V23.2327C146.024 24.7807 146.306 25.8367 146.87 26.4007C147.434 26.9527 148.496 27.2287 150.056 27.2287H153.008C154.232 27.2287 155.138 27.1147 155.726 26.8867C156.314 26.6587 156.704 26.2567 156.896 25.6807C157.028 25.2247 157.208 24.8767 157.436 24.6367C157.676 24.3967 158.036 24.2767 158.516 24.2767C159.02 24.2767 159.404 24.4087 159.668 24.6727C159.932 24.9367 160.016 25.3207 159.92 25.8247C159.656 27.3127 158.948 28.4227 157.796 29.1547C156.644 29.8867 155.048 30.2527 153.008 30.2527H150.056C147.668 30.2527 145.892 29.6767 144.728 28.5247C143.576 27.3727 143 25.6087 143 23.2327V19.0567C143 16.6207 143.576 14.8327 144.728 13.6927C145.892 12.5407 147.668 11.9767 150.056 12.0007H153.008C155.408 12.0007 157.184 12.5767 158.336 13.7287C159.488 14.8687 160.064 16.6447 160.064 19.0567V20.8567C160.064 21.8647 159.56 22.3687 158.552 22.3687H146.024ZM150.056 15.0247C148.496 15.0007 147.434 15.2707 146.87 15.8347C146.306 16.3987 146.024 17.4727 146.024 19.0567V19.3447H157.04V19.0567C157.04 17.4847 156.758 16.4227 156.194 15.8707C155.642 15.3067 154.58 15.0247 153.008 15.0247H150.056Z" fill="#0E0B32"/>
+<path d="M131.512 30.252C130.504 30.252 130 29.748 130 28.74V13.512C130 12.504 130.504 12 131.512 12C132.52 12 133.024 12.504 133.024 13.512V14.916C133.732 13.956 134.632 13.23 135.724 12.738C136.828 12.246 138.088 12 139.504 12C140.512 12 141.016 12.504 141.016 13.512C141.016 14.52 140.512 15.024 139.504 15.024C137.428 15.024 135.844 15.408 134.752 16.176C133.66 16.944 133.084 17.958 133.024 19.218V28.74C133.024 29.748 132.52 30.252 131.512 30.252Z" fill="#0E0B32"/>
+<path d="M126.461 12C127.487 12 128 12.497 128 13.4911V28.5089C128 29.503 127.487 30 126.461 30C125.435 30 124.922 29.503 124.922 28.5089V27.9231C123.628 29.3077 121.723 30 119.207 30H118.181C115.751 30 113.943 29.432 112.759 28.2959C111.586 27.1479 111 25.3965 111 23.0414V13.4911C111 12.497 111.513 12 112.539 12C113.565 12 114.078 12.497 114.078 13.4911V23.0414C114.078 24.5799 114.365 25.6272 114.939 26.1834C115.525 26.7396 116.606 27.0178 118.181 27.0178H119.207C120.672 27.0178 121.949 26.8521 123.036 26.5207C124.135 26.1893 124.764 25.6805 124.922 24.9941V13.4911C124.922 12.497 125.435 12 126.461 12Z" fill="#0E0B32"/>
+<path d="M107.265 30C104.88 30 103.12 29.4459 101.988 28.3376C100.855 27.2294 100.289 25.5198 100.289 23.209V15.0386H98.5181C97.506 15.0386 97 14.5434 97 13.5531C97 12.5627 97.506 12.0675 98.5181 12.0675H100.289V9.48553C100.289 8.49518 100.795 8 101.807 8C102.819 8 103.325 8.49518 103.325 9.48553V12.0675H107.482C108.494 12.0675 109 12.5627 109 13.5531C109 14.5434 108.494 15.0386 107.482 15.0386H103.325V23.209C103.325 24.7063 103.602 25.7203 104.157 26.2508C104.711 26.7696 105.747 27.0289 107.265 27.0289C107.735 27.0289 108.102 27.1468 108.367 27.3826C108.645 27.6184 108.783 27.9957 108.783 28.5145C108.783 29.5048 108.277 30 107.265 30Z" fill="#0E0B32"/>
+<path d="M94.4471 30C92.6073 30 91.2365 29.5561 90.3347 28.6683C89.4449 27.7687 89 26.4134 89 24.6023V6.49148C89 5.49716 89.505 5 90.5151 5C91.5251 5 92.0302 5.49716 92.0302 6.49148V24.6023C92.0302 25.5611 92.1865 26.2062 92.4991 26.5376C92.8238 26.8572 93.4731 27.017 94.4471 27.017C95.4812 27.017 95.9982 27.5142 95.9982 28.5085C96.0343 29.5028 95.5173 30 94.4471 30Z" fill="#0E0B32"/>
+<path d="M85.4612 12C86.4871 12 87 12.497 87 13.4911V28.5089C87 29.503 86.4871 30 85.4612 30C84.4354 30 83.9224 29.503 83.9224 28.5089V27.9231C82.6279 29.3077 80.7227 30 78.2069 30H77.181C74.7507 30 72.9432 29.432 71.7586 28.2959C70.5862 27.1479 70 25.3965 70 23.0414V13.4911C70 12.497 70.5129 12 71.5388 12C72.5647 12 73.0776 12.497 73.0776 13.4911V23.0414C73.0776 24.5799 73.3646 25.6272 73.9386 26.1834C74.5248 26.7396 75.6056 27.0178 77.181 27.0178H78.2069C79.6724 27.0178 80.9486 26.8521 82.0356 26.5207C83.1347 26.1893 83.7637 25.6805 83.9224 24.9941V13.4911C83.9224 12.497 84.4354 12 85.4612 12Z" fill="#0E0B32"/>
+<path d="M56.2105 30C53.4126 30 51.3416 29.3302 49.9976 27.9905C48.6659 26.6385 48 24.5552 48 21.7406V13.26C48 10.4209 48.6659 8.33145 49.9976 6.99176C51.3294 5.63978 53.3881 4.97608 56.1738 5.00066H60.609C62.906 5.00066 64.6592 5.48 65.8688 6.43867C67.0784 7.38506 67.781 8.88453 67.9764 10.9371C68.0497 11.4533 67.952 11.8466 67.6832 12.117C67.4144 12.3874 67.0234 12.5226 66.5103 12.5226C65.5817 12.5226 65.0441 12.0064 64.8975 10.974C64.7753 9.84321 64.3843 9.08118 63.7246 8.68788C63.077 8.29457 62.0385 8.09792 60.609 8.09792H56.1738C54.8787 8.08563 53.8585 8.23312 53.1132 8.54039C52.3802 8.84766 51.8548 9.3823 51.5371 10.1443C51.2317 10.8941 51.0789 11.9326 51.0789 13.26V21.7406C51.0789 23.0557 51.2317 24.0882 51.5371 24.8379C51.8548 25.5876 52.3863 26.1223 53.1316 26.4418C53.8769 26.7491 54.9032 26.9027 56.2105 26.9027H60.609C62.0385 26.9027 63.077 26.7061 63.7246 26.3128C64.3843 25.9072 64.7753 25.1452 64.8975 24.0267C65.0441 22.9943 65.5817 22.4781 66.5103 22.4781C67.0234 22.4781 67.4144 22.6133 67.6832 22.8837C67.952 23.1541 68.0497 23.5474 67.9764 24.0636C67.781 26.1284 67.0784 27.634 65.8688 28.5804C64.6592 29.5268 62.906 30 60.609 30H56.2105Z" fill="#0E0B32"/>
+<path d="M1.512 24.4879C0.504 24.4879 0 24.4838 0 23.4513V1.54867C0 0.516223 0.247996 0 1.256 0C1.916 0 2.724 0.331858 3.168 0.995575L11.664 14.0855L11.016 14.1962L19.584 0.995575C19.992 0.331858 20.604 0 21.42 0C22.236 0 22.644 0.516223 22.644 1.54867V23.4513C22.644 24.4838 22.14 25 21.132 25C20.124 25 19.62 24.4838 19.62 23.4513V4.64602L20.556 4.97788L12.996 16.3717C12.552 17.0354 12.036 17.5 11.256 17.5C10.716 17.5 10.128 17.0354 9.684 16.3717L2.124 4.97788L3.024 5.23599V23.4513C3.024 24.4838 2.52 24.4879 1.512 24.4879Z" fill="#0E0B32"/>
+<path d="M30.184 37.452C28.444 37.452 27.142 37.014 26.278 36.138C25.426 35.274 25 33.972 25 32.232C25 31.224 25.504 30.72 26.512 30.72C27.52 30.72 28.024 31.224 28.024 32.232C28.024 33.132 28.156 33.72 28.42 33.996C28.696 34.284 29.284 34.428 30.184 34.428H37.168C38.056 34.428 38.638 34.284 38.914 33.996C39.19 33.72 39.328 33.132 39.328 32.232V27.66C38.608 28.74 37.768 29.442 36.808 29.766C35.86 30.09 34.828 30.252 33.712 30.252H31.948C29.572 30.252 27.82 29.688 26.692 28.56C25.564 27.432 25 25.692 25 23.34V13.512C25 12.504 25.504 12 26.512 12C27.52 12 28.024 12.504 28.024 13.512V23.34C28.024 24.852 28.294 25.878 28.834 26.418C29.386 26.958 30.424 27.228 31.948 27.228H33.712C35.68 27.228 37.108 26.91 37.996 26.274C38.884 25.626 39.328 24.648 39.328 23.34V13.512C39.328 12.504 39.832 12 40.84 12C41.848 12 42.352 12.504 42.352 13.512V32.232C42.352 33.972 41.92 35.274 41.056 36.138C40.192 37.014 38.896 37.452 37.168 37.452H30.184Z" fill="#0E0B32"/>
+</svg></div>
+    <div class="topbar-right">
+      <div class="search-wrap">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+        <input type="text" placeholder="Current mood?" id="searchInput" oninput="handleSearch(this.value)">
+      </div>
+      <div class="filter-wrap">
+        <div class="icon-btn" id="filterBtn" onclick="toggleFilter()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"/></svg>
+        </div>
+        <div class="filter-menu" id="filterMenu">
+          <div class="filter-opt active" onclick="setFilter('all')">すべて</div>
+          <div class="filter-opt" onclick="setFilter('want')">気になる</div>
+          <div class="filter-opt" onclick="setFilter('done')">済み</div>
+          <div class="filter-opt" onclick="setFilter('none')">未設定</div>
+        </div>
+      </div>
+      <div class="icon-btn" onclick="sortCards()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="m21 8-4-4-4 4"/><path d="M17 4v16"/></svg>
+      </div>
+    </div>
+  </header>
+
+  <div class="content" id="mainContent"></div>
+</div>
+
+<!-- Journal Add Modal -->
+<div class="modal-overlay" id="journalModal">
+  <div class="modal">
+    <h3>記録を追加</h3>
+    <div class="form-group">
+      <label>タイトル</label>
+      <input type="text" id="jTitle" placeholder="作品名">
+    </div>
+    <div class="form-group" id="jCategoryGroup">
+      <label>カテゴリ</label>
+      <select id="jCategory">
+        <option value="movie">映画</option>
+        <option value="music">音楽</option>
+        <option value="book">本</option>
+        <option value="art">アート・展示</option>
+        <option value="other">その他</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>日付</label>
+      <input type="date" id="jDate">
+    </div>
+    <div class="form-group">
+      <label>どう思った？</label>
+      <textarea id="jNote" placeholder="感想や印象に残ったこと..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>写真（最大5枚）</label>
+      <div id="jImgPreview" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
+      <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer;border:0.5px dashed var(--border);border-radius:8px;padding:7px 12px;font-weight:400;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        写真を追加
+        <input type="file" id="jImages" accept="image/*" multiple style="display:none;" onchange="previewImages(this)">
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('journalModal')">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveJournal()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Journal Detail Modal -->
+<div class="modal-overlay" id="journalDetailModal">
+  <div class="modal" style="width:480px;max-width:94vw;padding:0;border-radius:16px;overflow:hidden;">
+    <div id="jdImageArea" style="display:none;width:100%;background:#EBEBEB;position:relative;">
+      <div id="jdSlider" style="display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;"></div>
+      <div id="jdDots" style="position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:5px;"></div>
+    </div>
+    <div style="padding:18px 20px 8px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:5px;">
+        <div id="jdTitle" style="font-size:18px;font-weight:500;color:var(--navy);line-height:1.3;"></div>
+        <span id="jdCat" style="font-size:11px;padding:3px 9px;border-radius:999px;border:0.5px solid var(--border);color:var(--text-muted);background:var(--bg);white-space:nowrap;flex-shrink:0;margin-top:3px;"></span>
+      </div>
+      <div id="jdDate" style="font-size:12px;color:var(--text-muted);margin-bottom:12px;"></div>
+      <div id="jdNote" style="font-size:13px;color:var(--text);line-height:1.7;margin-bottom:18px;min-height:20px;"></div>
+    </div>
+    <div style="padding:0 20px 18px;display:flex;justify-content:space-between;align-items:center;">
+      <button class="btn btn-ghost" style="padding:6px 8px;" onclick="closeModal('journalDetailModal')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+      <button class="btn btn-ghost" style="padding:6px 10px;color:var(--text-muted);font-size:12px;" onclick="deleteJournal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;margin-right:4px;vertical-align:middle;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>削除
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Card Detail Modal -->
+<div class="modal-overlay detail-modal" id="detailModal">
+  <div class="modal">
+    <div class="detail-thumb" id="detailThumb"></div>
+    <div class="detail-body">
+      <div class="detail-title" id="detailTitle"></div>
+      <div class="detail-sub" id="detailSub"></div>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between; padding: 0 20px 20px; margin-top:0;">
+      <button class="btn btn-ghost" style="padding:6px 8px;" onclick="closeModal('detailModal')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button class="btn btn-ghost" id="detailBmBtn" style="padding:6px 8px;" onclick="toggleBookmarkFromDetail()" title="ブックマーク">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><path d="M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z"/></svg>
+        </button>
+        <button class="btn btn-ghost" style="padding:6px 8px;" onclick="addToJournalFromDetail()" title="記録する">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4"/><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><path d="M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const ICONS = { movie:'🎬', music:'🎵', book:'📚', art:'🖼', other:'✨' };
+const CAT_LABELS = { movie:'MOVIE', music:'MUSIC', book:'BOOK', art:'ART' };
+
+const SAMPLE_DATA = {
+  movie: [
+    { id:'m1', title:'Sinners', desc:'Ryan Coogler監督による最新作。1930年代のデルタを舞台にしたホラードラマ。', status:'want' },
+    { id:'m2', title:'Mickey 17', desc:'ポン・ジュノ監督×Robert Pattinson。SF宇宙コロニー開拓の物語。', status:'none' },
+    { id:'m3', title:'Thunderbolts*', desc:'Marvel新作。アウトキャストのヒーローたちが集結。', status:'done' },
+    { id:'m4', title:'The Alto Knights', desc:'Robert De Niroがニューヨークマフィアの首領を二役で演じる。', status:'none' },
+    { id:'m5', title:'Novocaine', desc:'痛みを感じない男が巻き込まれるアクションスリラー。', status:'none' },
+    { id:'m6', title:'Black Bag', desc:'Steven Soderbergh監督。スパイ夫婦の心理戦。', status:'want' },
+  ],
+  music: [
+    { id:'mu1', title:'Manning Fireworks', desc:'MJ Lenderman。インディーロックの期待作。繊細な音の重なりが心地よい。', status:'done' },
+    { id:'mu2', title:'Bright Future', desc:'Adrianne Lenker（Big Thief）のソロ最新作。ギターと声のみの静謐な世界。', status:'want' },
+    { id:'mu3', title:'Short n\' Sweet', desc:'Sabrina Carpenter。キャッチーなポップチューンが詰まった話題作。', status:'none' },
+    { id:'mu4', title:'GNX', desc:'Kendrick Lamar。2024年のアルバム。ウェストコーストの空気感。', status:'none' },
+    { id:'mu5', title:'Imaginal Disk', desc:'Magdalena Bay。シンセポップの新境地を切り開く意欲作。', status:'want' },
+    { id:'mu6', title:'Lives of the Saints', desc:'Vampire Weekend。5年ぶりの待望の新作。', status:'none' },
+  ],
+  book: [
+    { id:'b1', title:'ある一生', desc:'ロベルト・ゼーターラー。オーストリアの山岳地帯を生きた男の物語。', status:'done' },
+    { id:'b2', title:'存在の耐えられない軽さ', desc:'ミラン・クンデラ。プラハの春を背景にした愛と自由の哲学小説。', status:'want' },
+    { id:'b3', title:'夜と霧', desc:'V・E・フランクル。強制収容所からの生還と実存的意味の探求。', status:'none' },
+    { id:'b4', title:'パラサイト', desc:'ポン・ジュノ監督によるノベライズ版。映画とは違う深みを持つ。', status:'none' },
+    { id:'b5', title:'カラマーゾフの兄弟', desc:'ドストエフスキー。信仰・自由・道徳を問う不朽の大作。', status:'none' },
+    { id:'b6', title:'百年の孤独', desc:'ガルシア＝マルケス。マジックリアリズムの金字塔。', status:'want' },
+  ],
+  art: [
+    { id:'a1', title:'村上隆 もののけ 京都', desc:'京都市京セラ美術館。圧倒的なスケールの新作群。2024年〜。', status:'done' },
+    { id:'a2', title:'マティス展 光の旅', desc:'東京都美術館。フォーヴィズムの巨匠、後期作品を中心に。', status:'want' },
+    { id:'a3', title:'塩田千春 魂がふるえる', desc:'森美術館。赤い糸で埋め尽くされた空間インスタレーション。', status:'none' },
+    { id:'a4', title:'Chim↑Pom from Smappa!Group', desc:'森美術館。社会問題に切り込む現代アートグループの大規模個展。', status:'none' },
+    { id:'a5', title:'ルーヴル美術館展', desc:'国立新美術館。愛をテーマにした西洋絵画の名品が集結。', status:'want' },
+    { id:'a6', title:'デイヴィッド・ホックニー展', desc:'東京都現代美術館。色彩の魔術師による大規模回顧展。', status:'none' },
+  ],
+};
+
+let journalData = JSON.parse(localStorage.getItem('mcr_journal') || '[]');
+let cardStatuses = JSON.parse(localStorage.getItem('mcr_statuses') || '{}');
+let currentPage = 'home';
+let currentFilter = 'all';
+let currentCardId = null;
+let currentCat = null;
+let currentJournalIdx = null;
+let searchQuery = '';
+
+function save() {
+  localStorage.setItem('mcr_journal', JSON.stringify(journalData));
+  localStorage.setItem('mcr_statuses', JSON.stringify(cardStatuses));
+}
+
+function navigate(page) {
+  currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll(`[data-page="${page}"]`).forEach(el => el.classList.add('active'));
+  if (['movie','music','book','art'].includes(page)) {
+    document.querySelector('[data-page="home"]').classList.add('active');
+  }
+  render();
+}
+
+function render() {
+  const c = document.getElementById('mainContent');
+  if (currentPage === 'journal') { renderJournal(c); return; }
+  if (currentPage === 'bookmark') { renderBookmark(c); return; }
+  if (currentPage === 'settings') { renderSettings(c); return; }
+  const cats = currentPage === 'home' ? ['movie','music','book','art'] : [currentPage];
+  c.innerHTML = cats.map(cat => renderSection(cat)).join('');
+}
+
+function getStatus(id) { return cardStatuses[id] || 'none'; }
+
+function filterCard(id) {
+  if (currentFilter === 'all') return true;
+  return getStatus(id) === currentFilter;
+}
+
+function searchCard(item) {
+  if (!searchQuery) return true;
+  return item.title.toLowerCase().includes(searchQuery.toLowerCase()) || item.desc.toLowerCase().includes(searchQuery.toLowerCase());
+}
+
+function renderSection(cat) {
+  const items = SAMPLE_DATA[cat].filter(i => filterCard(i.id) && searchCard(i));
+  if (!items.length) return '';
+  const catArrow = `<button class="section-arrow" onclick="navigate('${cat}')" title="${cat}一覧へ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>`;
+  const svgs = {
+    movie: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 3v18"/><path d="M3 7.5h4"/><path d="M3 12h18"/><path d="M3 16.5h4"/><path d="M17 3v18"/><path d="M17 7.5h4"/><path d="M17 16.5h4"/></svg>',
+    music: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg>',
+    book: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/><path d="M8 11h8"/><path d="M8 7h6"/></svg>',
+    art: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>',
+  };
+  return `
+    <div class="section">
+      <div class="section-header">${svgs[cat]}<h2>${CAT_LABELS[cat]}</h2>${currentPage === 'home' ? catArrow : ''}</div>
+      <div class="cards-grid">${items.map(i => renderCard(i, cat)).join('')}</div>
+    </div>`;
+}
+
+function renderCard(item, cat) {
+  const isBookmarked = getStatus(item.id) === 'want';
+  return `
+    <div class="card">
+      <div class="card-thumb">${ICONS[cat]}</div>
+      <div class="card-body">
+        <div class="card-title">${item.title}</div>
+        <div class="card-desc">${item.desc}</div>
+        <div class="card-footer">
+          <div class="card-arrow" onclick="openDetail('${item.id}','${cat}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderJournal(c) {
+  const html = `
+    <div class="section">
+      <div class="section-header">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4"/><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><path d="M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z"/></svg>
+        <h2>JOURNAL</h2>
+      </div>
+      <div class="journal-list">
+        ${journalData.length === 0 ? '<div class="empty">まだ記録がありません</div>' : journalData.slice().reverse().map((j, idx) => `
+          <div class="journal-item" onclick="openJournalDetail(${idx})" style="cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='var(--navy10)'" onmouseout="this.style.background=''">
+            <div class="journal-icon">${ICONS[j.category] || '✨'}</div>
+            <div class="journal-info">
+              <div class="journal-title">${j.title}</div>
+              <div class="journal-meta">${j.date}</div>
+              ${j.note ? `<div class="journal-note">${j.note}</div>` : ''}
+            </div>
+            <div class="journal-cat">${j.categoryLabel || ''}</div>
+          </div>`).join('')}
+        <button class="add-journal-btn" onclick="openModal('journalModal')">+ 記録を追加</button>
+      </div>
+    </div>`;
+  c.innerHTML = html;
+}
+
+function renderSettings(c) {
+  const apiKey = localStorage.getItem('mcr_gemini_key') || '';
+  const lastFetch = localStorage.getItem('mcr_last_fetch') || 'なし';
+  const keySet = apiKey ? '<div style="font-size:11px;color:#1A7A4A;margin-top:8px;">✓ APIキー設定済み</div>' : '';
+  const settingsHtml = '<div class="section" style="max-width:540px;">'
+    + '<div class="section-header" style="margin-bottom:24px;">'
+    + '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>'
+    + '<h2>SETTINGS</h2>'
+    + '</div>'
+    + '<div style="background:var(--card-bg);border:0.5px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-bottom:16px;">'
+    + '<div style="font-size:13px;font-weight:500;color:var(--navy);margin-bottom:4px;">Gemini API キー</div>'
+    + '<div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">Google AI Studio で取得したAPIキーを入力してください。ブラウザ内にのみ保存されます。</div>'
+    + '<div style="display:flex;gap:8px;">'
+    + '<input type="password" id="apiKeyInput" value="' + apiKey + '" placeholder="AIza..." style="flex:1;padding:9px 12px;border:0.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);outline:none;color:var(--navy);">'
+    + '<button class="btn btn-primary" onclick="saveApiKey()">保存</button>'
+    + '</div>'
+    + keySet
+    + '</div>'
+    + '<div style="background:var(--card-bg);border:0.5px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-bottom:16px;">'
+    + '<div style="font-size:13px;font-weight:500;color:var(--navy);margin-bottom:4px;">新着情報の取得</div>'
+    + '<div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">最終取得：' + lastFetch + '</div>'
+    + '<button class="btn btn-ghost" onclick="fetchNewContent(true)" style="font-size:13px;">今すぐ更新する</button>'
+    + '</div>'
+    + '<div style="background:var(--card-bg);border:0.5px solid var(--border);border-radius:var(--radius);padding:20px 22px;">'
+    + '<div style="font-size:13px;font-weight:500;color:var(--navy);margin-bottom:4px;">レコメンド</div>'
+    + '<div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">ジャーナルの記録をもとにGeminiがおすすめを提案します。</div>'
+    + '<button class="btn btn-primary" onclick="fetchRecommend()">レコメンドを取得</button>'
+    + '<div id="recommendResult" style="margin-top:14px;font-size:13px;color:var(--text);line-height:1.7;white-space:pre-wrap;"></div>'
+    + '</div>'
+    + '</div>';
+  c.innerHTML = settingsHtml;
+}
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  localStorage.setItem('mcr_gemini_key', key);
+  render();
+}
+
+function renderBookmark(c) {
+  const bookmarked = [];
+  Object.keys(SAMPLE_DATA).forEach(cat => {
+    SAMPLE_DATA[cat].forEach(item => {
+      if (getStatus(item.id) === 'want') bookmarked.push({item, cat});
+    });
+  });
+  c.innerHTML = `
+    <div class="section">
+      <div class="section-header">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z"/></svg>
+        <h2>BOOKMARK</h2>
+      </div>
+      ${bookmarked.length === 0
+        ? '<div class="empty">「気になる」に設定したコンテンツがここに表示されます</div>'
+        : `<div class="cards-grid">${bookmarked.map(({item,cat}) => renderCard(item,cat)).join('')}</div>`}
+    </div>`;
+}
+
+function openDetail(id, cat) {
+  currentCardId = id;
+  currentCat = cat;
+  const item = SAMPLE_DATA[cat].find(i => i.id === id);
+  document.getElementById('detailThumb').textContent = ICONS[cat];
+  document.getElementById('detailTitle').textContent = item.title;
+  document.getElementById('detailSub').textContent = item.desc;
+  const isBookmarked = getStatus(id) === 'want';
+  const btn = document.getElementById('detailBmBtn');
+  btn.style.color = isBookmarked ? 'var(--navy)' : '';
+  btn.style.fontWeight = isBookmarked ? '500' : '';
+  openModal('detailModal');
+}
+
+function toggleBookmark(id) {
+  cardStatuses[id] = getStatus(id) === 'want' ? 'none' : 'want';
+  save();
+  render();
+}
+
+function toggleBookmarkFromDetail() {
+  if (!currentCardId) return;
+  toggleBookmark(currentCardId);
+  const isBookmarked = getStatus(currentCardId) === 'want';
+  const btn = document.getElementById('detailBmBtn');
+  btn.style.color = isBookmarked ? 'var(--navy)' : '';
+  btn.style.fontWeight = isBookmarked ? '500' : '';
+}
+
+function addToJournalFromDetail() {
+  const title = document.getElementById('detailTitle').textContent;
+  closeModal('detailModal');
+  document.getElementById('jTitle').value = title;
+  openModal('journalModal', true);
+}
+
+function openModal(id, fromCard) {
+  document.getElementById(id).classList.add('open');
+  if (id === 'journalModal') {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('jDate').value = today;
+    document.getElementById('jCategoryGroup').style.display = fromCard ? 'none' : '';
+  }
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+
+function saveJournal() {
+  const title = document.getElementById('jTitle').value.trim();
+  if (!title) return;
+  const dateVal = document.getElementById('jDate').value;
+  const dateLabel = dateVal
+    ? new Date(dateVal + 'T00:00:00').toLocaleDateString('ja-JP', {month:'short', day:'numeric'})
+    : new Date().toLocaleDateString('ja-JP', {month:'short', day:'numeric'});
+  const catEl = document.getElementById('jCategory');
+  const catLabels = { movie:'映画', music:'音楽', book:'本', art:'アート・展示', other:'その他' };
+  const catVal = catEl ? catEl.value : (currentCat || 'other');
+  const entry = {
+    id: Date.now(),
+    title,
+    category: catVal,
+    categoryLabel: catLabels[catVal] || '',
+    note: document.getElementById('jNote').value.trim(),
+    date: dateLabel,
+    images: window._pendingImages || [],
+  };
+  journalData.push(entry);
+  save();
+  window._pendingImages = [];
+  document.getElementById('jTitle').value = '';
+  document.getElementById('jNote').value = '';
+  document.getElementById('jDate').value = '';
+  document.getElementById('jImgPreview').innerHTML = '';
+  closeModal('journalModal');
+  if (currentPage === 'journal') render();
+}
+
+function toggleFilter() { document.getElementById('filterMenu').classList.toggle('open'); }
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-opt').forEach(el => {
+    el.classList.toggle('active', el.textContent.trim() === ({all:'すべて', want:'気になる', done:'済み', none:'未設定'}[f]));
+  });
+  document.getElementById('filterMenu').classList.remove('open');
+  render();
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.filter-wrap')) document.getElementById('filterMenu').classList.remove('open');
+});
+
+function sortCards() {
+  Object.keys(SAMPLE_DATA).forEach(cat => {
+    SAMPLE_DATA[cat].sort((a,b) => {
+      const order = {want:0, done:1, none:2};
+      return (order[getStatus(a.id)]||2) - (order[getStatus(b.id)]||2);
+    });
+  });
+  render();
+}
+
+function handleSearch(v) { searchQuery = v; render(); }
+
+// Load cached Gemini data if available
+const cachedData = localStorage.getItem('mcr_cached_data');
+if (cachedData) {
+  try {
+    const parsed = JSON.parse(cachedData);
+    ['movie','music','book','art'].forEach(cat => {
+      if (parsed[cat]) SAMPLE_DATA[cat] = parsed[cat];
+    });
+  } catch(e) {}
+}
+
+
+function previewImages(input) {
+  const files = Array.from(input.files).slice(0, 5);
+  window._pendingImages = [];
+  const preview = document.getElementById('jImgPreview');
+  preview.innerHTML = '';
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      window._pendingImages.push(e.target.result);
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      img.style.cssText = 'width:64px;height:64px;object-fit:cover;border-radius:6px;border:0.5px solid var(--border);';
+      preview.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function deleteJournal() {
+  if (!confirm('この記録を削除しますか？')) return;
+  const reversed = journalData.slice().reverse();
+  const entry = reversed[currentJournalIdx];
+  journalData = journalData.filter(j => j !== entry);
+  save();
+  closeModal('journalDetailModal');
+  if (currentPage === 'journal') render();
+}
+
+function openJournalDetail(idx) {
+  currentJournalIdx = idx;
+  const j = journalData.slice().reverse()[idx];
+  document.getElementById('jdTitle').textContent = j.title;
+  document.getElementById('jdDate').textContent = j.date;
+  document.getElementById('jdCat').textContent = j.categoryLabel || '';
+  document.getElementById('jdNote').textContent = j.note || '';
+  const area = document.getElementById('jdImageArea');
+  const slider = document.getElementById('jdSlider');
+  const dots = document.getElementById('jdDots');
+  if (j.images && j.images.length) {
+    area.style.display = 'block';
+    slider.innerHTML = j.images.map(src =>
+      `<img src="${src}" style="width:100%;flex-shrink:0;scroll-snap-align:start;aspect-ratio:16/9;object-fit:cover;display:block;">`
+    ).join('');
+    dots.innerHTML = j.images.length > 1
+      ? j.images.map((_, i) => `<div style="width:6px;height:6px;border-radius:50%;background:${i===0?'white':'rgba(255,255,255,0.5)'};" id="dot-${i}"></div>`).join('')
+      : '';
+    if (j.images.length > 1) {
+      slider.onscroll = () => {
+        const i = Math.round(slider.scrollLeft / slider.offsetWidth);
+        dots.querySelectorAll('div').forEach((d,idx) => d.style.background = idx===i ? 'white' : 'rgba(255,255,255,0.5)');
+      };
+    }
+  } else {
+    area.style.display = 'none';
+    slider.innerHTML = '';
+    dots.innerHTML = '';
+  }
+  openModal('journalDetailModal');
+}
+
+async function callGemini(prompt) {
+  const key = localStorage.getItem('mcr_gemini_key');
+  if (!key) { alert('設定画面でGemini APIキーを入力してください。'); return null; }
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+    const data = await res.json();
+    if (data.error) { alert('APIエラー: ' + data.error.message); return null; }
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+  } catch(e) {
+    alert('通信エラーが発生しました。');
+    return null;
+  }
+}
+
+async function fetchNewContent(force = false) {
+  const key = localStorage.getItem('mcr_gemini_key');
+  if (!key) { navigate('settings'); alert('まずAPIキーを設定してください。'); return; }
+
+  const now = new Date();
+  const lastFetch = localStorage.getItem('mcr_last_fetch_ts');
+  const daysSince = lastFetch ? (now - new Date(lastFetch)) / (1000*60*60*24) : 999;
+  if (!force && daysSince < 6) return;
+
+  const loadingEl = document.getElementById('mainContent');
+  if (loadingEl) loadingEl.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);font-size:13px;">Geminiから最新情報を取得中...</div>';
+
+  const today = now.toLocaleDateString('ja-JP', {year:'numeric', month:'long', day:'numeric'});
+  const prompt = `あなたは日本の文化情報アシスタントです。今日は${today}です。
+以下のカテゴリごとに、最近リリース・公開・開催されている注目のコンテンツを各4件、JSON形式で返してください。
+必ずJSON配列のみを返し、説明文や\`\`\`は不要です。
+
+{
+  "movie": [{"id":"m_1","title":"タイトル","desc":"100文字以内の説明"}],
+  "music": [{"id":"mu_1","title":"タイトル","desc":"100文字以内の説明"}],
+  "book": [{"id":"b_1","title":"タイトル","desc":"100文字以内の説明"}],
+  "art": [{"id":"a_1","title":"タイトル（展示名）","desc":"100文字以内の説明（会場名を含む）"}]
+}`;
+
+  const result = await callGemini(prompt);
+  if (!result) { render(); return; }
+
+  try {
+    const clean = result.replace(/```json|```/g, '').trim();
+    const data = JSON.parse(clean);
+    ['movie','music','book','art'].forEach(cat => {
+      if (data[cat] && data[cat].length) {
+        data[cat].forEach((item, i) => {
+          item.id = item.id || `${cat}_${i}`;
+          item.status = 'none';
+        });
+        SAMPLE_DATA[cat] = data[cat];
+      }
+    });
+    localStorage.setItem('mcr_last_fetch_ts', now.toISOString());
+    localStorage.setItem('mcr_last_fetch', now.toLocaleDateString('ja-JP', {month:'long', day:'numeric', hour:'2-digit', minute:'2-digit'}));
+    localStorage.setItem('mcr_cached_data', JSON.stringify(SAMPLE_DATA));
+  } catch(e) {
+    console.error('Parse error:', e, result);
+  }
+  render();
+}
+
+async function fetchRecommend() {
+  if (journalData.length === 0) {
+    const el = document.getElementById('recommendResult');
+    if (el) el.textContent = 'ジャーナルに記録を追加してからお試しください。';
+    return;
+  }
+  const resultEl = document.getElementById('recommendResult');
+  if (!resultEl) return;
+  resultEl.textContent = '取得中...';
+
+  const journalSummary = journalData.slice(-10).map(j =>
+    '・' + j.title + '（' + (j.categoryLabel || '') + '）' + (j.note ? '：' + j.note : '')
+  ).join('\n');
+
+  const prompt = '以下は私が最近体験したコンテンツの記録です：\n'
+    + journalSummary
+    + '\n\nこの記録をもとに、私が次に楽しめそうな映画・音楽・本・展示をそれぞれ1〜2件、理由とともに日本語で提案してください。200文字以内で簡潔にお願いします。';
+
+  const result = await callGemini(prompt);
+  if (result) resultEl.textContent = result;
+}
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const main = document.querySelector('.main');
+  const isOpen = sidebar.classList.toggle('open');
+  main.style.marginLeft = isOpen ? 'var(--sidebar-w)' : '52px';
+}
+
+render();
+
+// Auto-fetch on Fridays or if data is stale (>6 days)
+const _now = new Date();
+const _lastFetch = localStorage.getItem('mcr_last_fetch_ts');
+const _daysSince = _lastFetch ? (_now - new Date(_lastFetch)) / (1000*60*60*24) : 999;
+const _isFriday = _now.getDay() === 5;
+if (localStorage.getItem('mcr_gemini_key') && (_isFriday || _daysSince > 6)) {
+  setTimeout(() => fetchNewContent(), 1000);
+}
+</script>
+</body>
+</html>
